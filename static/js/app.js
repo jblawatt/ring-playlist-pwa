@@ -1,7 +1,18 @@
 
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+        .then(function (reg) {
+            if (reg.installing) console.log('ServiceWorker installing');
+            if (reg.waiting) console.log('ServiceWorker installed');
+            if (reg.active) console.log('ServiceWorker active');
+        })
+        .catch(function (err) {
+            console.log('Error registering serviceWorker ' + err);
+        });
+}
+
 
 ; (function (exports) {
-
 
     const DISPLAY_KT = 1;
     const DISPLAY_TK = 2;
@@ -24,12 +35,28 @@
         return localStorage.getItem('favorite-' + id) == '1';
     }
 
-    m.request({
-        method: "GET",
-        url: "/api/playlist"
-    }).then(function (result) {
-        exports.data = result.data;
-    });
+    const C_STORAGE_KEY = "playlist-data";
+
+    function initializeData() {
+        if (navigator.onLine) {
+            m.request({
+                method: "GET",
+                url: "/api/playlist"
+            }).then(function (result) {
+                exports.data = result.data;
+                localStorage.setItem(C_STORAGE_KEY, JSON.stringify(result.data));
+            });
+        } else {
+            setTimeout(function () {
+                var data = localStorage.getItem(C_STORAGE_KEY);
+                if (!data) {
+                    data = "[]";
+                }
+                exports.data = JSON.parse(data);
+                m.redraw();
+            })
+        }
+    }
 
     const DisplaySwitch = {
         view: function (vnode) {
@@ -49,7 +76,15 @@
                     onclick: function () {
                         exports.filterFav = !exports.filterFav;
                     }
-                }, m('i.fa-heart.fa')))
+                }, m('i.fa-heart.fa'))),
+                m('div.button-group', m('button.btn.btn-md.btn-tab', {
+                    class: 'btn-primary',
+                    onclick: function () {
+                        caches.delete('v1').then(function () {
+                            location.reload();
+                        });
+                    }
+                }, m('i.fa-sync.fa')))
             )
         }
     }
@@ -138,6 +173,6 @@
     m.mount(document.getElementById("display-switch"), DisplaySwitch);
     m.mount(document.getElementById("filter-form"), FilterField);
 
-
+    initializeData();
 
 })(window);
