@@ -1,15 +1,18 @@
-
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-        .then(function (reg) {
-            if (reg.installing) console.log('ServiceWorker installing');
-            if (reg.waiting) console.log('ServiceWorker installed');
-            if (reg.active) console.log('ServiceWorker active');
-        })
-        .catch(function (err) {
-            console.log('Error registering serviceWorker ' + err);
-        });
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function (reg) {
+                if (reg.installing) console.log('ServiceWorker installing');
+                if (reg.waiting) console.log('ServiceWorker installed');
+                if (reg.active) console.log('ServiceWorker active');
+            })
+            .catch(function (err) {
+                console.log('Error registering serviceWorker ' + err);
+            });
+    }
 }
+
+registerServiceWorker();
 
 
 ; (function (exports) {
@@ -38,24 +41,13 @@ if ('serviceWorker' in navigator) {
     const C_STORAGE_KEY = "playlist-data";
 
     function initializeData() {
-        if (navigator.onLine) {
-            m.request({
-                method: "GET",
-                url: "/api/playlist"
-            }).then(function (result) {
-                exports.data = result.data;
-                localStorage.setItem(C_STORAGE_KEY, JSON.stringify(result.data));
-            });
-        } else {
-            setTimeout(function () {
-                var data = localStorage.getItem(C_STORAGE_KEY);
-                if (!data) {
-                    data = "[]";
-                }
-                exports.data = JSON.parse(data);
-                m.redraw();
-            })
-        }
+        m.request({
+            method: "GET",
+            url: "/api/playlist"
+        }).then(function (result) {
+            exports.data = result.data;
+            localStorage.setItem(C_STORAGE_KEY, JSON.stringify(result.data));
+        });
     }
 
     const DisplaySwitch = {
@@ -76,15 +68,7 @@ if ('serviceWorker' in navigator) {
                     onclick: function () {
                         exports.filterFav = !exports.filterFav;
                     }
-                }, m('i.fa-heart.fa'))),
-                m('div.button-group', m('button.btn.btn-md.btn-tab', {
-                    class: 'btn-primary',
-                    onclick: function () {
-                        caches.delete('v1').then(function () {
-                            location.reload();
-                        });
-                    }
-                }, m('i.fa-sync.fa')))
+                }, m('i.fa-heart.fa')))
             )
         }
     }
@@ -111,18 +95,41 @@ if ('serviceWorker' in navigator) {
         }
     }
 
+    const setFilter = _.debounce(function (value) {
+        exports.filter = value;
+        m.redraw();
+    }, 200);
+
     const FilterField = {
         view: function (vnode) {
-            return m('div.form-group', m('form.form-inline', { onreset: function () { exports.filter = ""; } }, m('div.input-group mb-3'
-                , m('input.form-control', {
-                    placeholder: 'Was suchste denn?',
-                    oninput: _.throttle(function (evt) {
-                        exports.filter = evt.target.value;
-                        console.log(exports.filter);
-                    }, 100)
-                })
-                , m('div.input-group-append', m('button.btn.btn-primary', { type: 'reset', style: "font-size:1.5em;" }, m.trust('<i class="fas fa-eraser"></i>')))
-            )));
+            return m(
+                'div.form-group',
+                m('form.form-inline',
+                    {
+                        onreset: function () { exports.filter = ""; },
+                        onsubmit: function (e) { e.preventDefault(); return false; }
+                    },
+                    m('div.input-group mb-3',
+                        { id: 'filter-input-group' },
+                        m('input.form-control',
+                            {
+                                placeholder: 'Was suchste denn?',
+                                oninput: function (evt) {
+                                    setFilter(evt.target.value);
+                                }
+                            }),
+                        m('div.input-group-append',
+                            m('button.btn.btn-primary',
+                                {
+                                    type: 'reset',
+                                    style: "font-size:1.5em;"
+                                },
+                                m.trust('<i class="fas fa-eraser"></i>')
+                            )
+                        )
+                    )
+                )
+            );
         }
     }
 
@@ -168,6 +175,16 @@ if ('serviceWorker' in navigator) {
             }));
         }
     }
+
+    exports.deleteCaches = function deleteCaches() {
+        caches.keys().then(function (keys) {
+            keys.forEach(function (key) {
+                console.log("deleting key " + key + "...");
+                caches.delete(key);
+            });
+            exports.location.reload();
+        })
+    };
 
     m.mount(document.getElementById("content"), Playlist);
     m.mount(document.getElementById("display-switch"), DisplaySwitch);

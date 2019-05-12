@@ -1,6 +1,6 @@
 /* #b50e12 */
 
-@import url('https://fonts.googleapis.com/css?family=Anton');
+@import url('/static/css/anton.css');
 
 .text-primary {
     color: #b50e12 !important;
@@ -12,13 +12,32 @@
     /* font-weight: bold; */
 }
 
-body {
-    color: #e4d1ad;
-    background: url(/static/images/background.jpg) no-repeat fixed;
-    background-size: auto;
+html, body {
+    /* color: #e4d1ad; */
+    color: white;
     
+    background-size: auto;
     font-family: "Anton";
+    height: 100%;
+}
 
+#bg-wrapper {
+    top:0;
+    bottom:0;
+    left:0;
+    right:0;
+    width:100%;
+    min-height:100%;
+    height: auto !important;
+    background: url(/static/images/background_stripes.png) no-repeat fixed center;
+    position:relative;
+}
+
+.navbar-brand {
+    text-align: center;
+}
+.navbar-brand img {
+    width: 100%;
 }
 
 .btn-tab {
@@ -72,5 +91,10 @@ body {
     margin-top: 10px;
     border: solid #e4d1ad 1px;
 
+}
+
+
+#filter-input-group {
+    width: 100%;
 }
 
