@@ -171,10 +171,16 @@ func playlistApiHandler(c *gin.Context) {
 	if resp, err := getData(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	} else {
+		ifNoneMatch := c.Request.Header.Get("If-None-Match")
 		if b, err := json.Marshal(resp); err == nil {
-			c.Header("etag", fmt.Sprintf("\"W\\%x\"", md5.Sum(b)))
+			etag := fmt.Sprintf("\"W\\%x\"", md5.Sum(b))
+			if ifNoneMatch == etag {
+				c.String(http.StatusNotModified, "")
+			} else {
+				c.Header("etag", etag)
+				c.JSON(http.StatusOK, gin.H{"data": resp})
+			}
 		}
-		c.JSON(http.StatusOK, gin.H{"data": resp})
 	}
 }
 
