@@ -41,12 +41,16 @@ registerServiceWorker();
     const C_STORAGE_KEY = "playlist-data";
 
     function initializeData() {
+        var storeData = localStorage.getItem(C_STORAGE_KEY);
+        storeData = storeData ? storeData : "[]";
+        exports.data = JSON.parse(storeData);
         m.request({
             method: "GET",
             url: "/api/playlist"
         }).then(function (result) {
             exports.data = result.data;
             localStorage.setItem(C_STORAGE_KEY, JSON.stringify(result.data));
+            console.debug("data loaded from backend");
         });
     }
 
