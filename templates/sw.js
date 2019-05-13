@@ -2,22 +2,17 @@
 const C_CACHE_VERSION = '{{.CacheVersion}}';
 const C_SERVICE_WORKER_VERSION = '{{.ServiceWorkerVersion}}';
 const C_APPLICATION_VERSION = '{{.BuildVersion}}';
+const C_PLAYLIST_VERSION = '{{.PlaylistVersion}}';
 
 self.addEventListener('install', function (event) {
 
     console.log("Installing ServiceWorker " + C_SERVICE_WORKER_VERSION + "...");
 
-    caches.keys().then(function (keys) {
-        keys.forEach(function (k) {
-            caches.delete(k);
-        })
-    })
-
     event.waitUntil(
         caches.open(C_CACHE_VERSION).then(function (cache) {
             return cache.addAll([
                 '/',
-                '/api/playlist',
+                // '/api/playlist',
                 '/manifest.json',
 
                 '/static/js/vendor/jquery.min.js',
@@ -44,10 +39,21 @@ self.addEventListener('install', function (event) {
             ]);
         })
     );
+
+    self.skipWaiting();
+
 });
 
-self.addEventListener('active', function () {
+self.addEventListener('activate', function (event) {
     console.log("Activating ServiceWorker " + C_SERVICE_WORKER_VERSION + "...");
+    event.waitUntil(caches.keys().then(function (keys) {
+        keys.forEach(function (k) {
+            if (k != C_CACHE_VERSION) {
+                console.debug("Deleting old cache: " + k + "...");
+                caches.delete(k);
+            }
+        })
+    }));
 });
 
 self.addEventListener('fetch', function (event) {
@@ -57,7 +63,7 @@ self.addEventListener('fetch', function (event) {
         if (response !== undefined) {
             return response;
         } else {
-            return fetch(event.request).then(function (response) {
+            return fetch(event.request, { credentials: 'include' }).then(function (response) {
                 // response may be used only once
                 // we need to save clone to put one copy in cache
                 // and serve second one

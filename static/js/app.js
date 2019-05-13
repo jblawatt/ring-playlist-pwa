@@ -41,9 +41,13 @@ registerServiceWorker();
     const C_STORAGE_KEY = "playlist-data";
 
     function initializeData() {
-        var storeData = localStorage.getItem(C_STORAGE_KEY);
-        storeData = storeData ? storeData : "[]";
-        exports.data = JSON.parse(storeData);
+        setTimeout(() => {
+            var storeData = localStorage.getItem(C_STORAGE_KEY);
+            storeData = storeData ? storeData : "[]";
+            exports.data = JSON.parse(storeData);
+            m.redraw();
+        });
+
         m.request({
             method: "GET",
             url: "/api/playlist"
@@ -52,6 +56,7 @@ registerServiceWorker();
             localStorage.setItem(C_STORAGE_KEY, JSON.stringify(result.data));
             console.debug("data loaded from backend");
         });
+
     }
 
     const DisplaySwitch = {
@@ -190,10 +195,10 @@ registerServiceWorker();
         })
     };
 
+    initializeData();
+
     m.mount(document.getElementById("content"), Playlist);
     m.mount(document.getElementById("display-switch"), DisplaySwitch);
     m.mount(document.getElementById("filter-form"), FilterField);
-
-    initializeData();
 
 })(window);
